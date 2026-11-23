@@ -42,7 +42,7 @@ pub async fn app_info(app: tauri::AppHandle) -> Result<AppInfo, String> {
         version: env!("CARGO_PKG_VERSION").into(),
         data_dir: dir.to_string_lossy().to_string(),
         platform: std::env::consts::OS.into(),
-        can_update: updater_supported(),
+        can_update: false,
     })
 }
 
@@ -90,47 +90,18 @@ pub struct UpdateInfo {
     pub notes: String,
 }
 
-fn updater_supported() -> bool {
-    // Never offer the upstream application's signed updates to fork users.
-    // Downloads are published on Packdesk's GitHub Releases instead.
-    false
+#[tauri::command]
+pub async fn check_update(_app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
+    // Packdesk does not offer signed in-app updates. Releases are published on
+    // GitHub, and the About page links there instead.
+    Ok(None)
 }
 
 #[tauri::command]
-pub async fn check_update(app: tauri::AppHandle) -> Result<Option<UpdateInfo>, String> {
-    use tauri_plugin_updater::UpdaterExt;
-    if !updater_supported() {
-        return Ok(None);
-    }
-    let updater = app.updater().map_err(es)?;
-    match updater.check().await.map_err(es)? {
-        Some(u) => Ok(Some(UpdateInfo {
-            version: u.version.clone(),
-            notes: u.body.clone().unwrap_or_default(),
-        })),
-        None => Ok(None),
-    }
-}
-
-#[tauri::command]
-pub async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
-    use tauri_plugin_updater::UpdaterExt;
-    if !updater_supported() {
-        return Err("Automatic updates aren't available for this install. \
-             Download Packdesk updates from github.com/Jammersmurph/packdesk/releases."
-            .into());
-    }
-    let updater = app.updater().map_err(es)?;
-    let update = updater
-        .check()
-        .await
-        .map_err(es)?
-        .ok_or_else(|| "No update available.".to_string())?;
-    update
-        .download_and_install(|_, _| {}, || {})
-        .await
-        .map_err(es)?;
-    app.restart()
+pub async fn install_update(_app: tauri::AppHandle) -> Result<(), String> {
+    Err("Automatic updates aren't available for this install. \
+         Download Packdesk updates from github.com/Jammersmurph/packdesk/releases."
+        .into())
 }
 
 #[tauri::command]

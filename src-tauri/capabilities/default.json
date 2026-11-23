@@ -29,7 +29,6 @@
       "allow": [{ "path": "**" }]
     },
     "opener:allow-open-url",
-    "opener:allow-reveal-item-in-dir",
-    "updater:default"
+    "opener:allow-reveal-item-in-dir"
   ]
 }
