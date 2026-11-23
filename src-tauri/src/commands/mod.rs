@@ -41,6 +41,7 @@ pub use windows::*;
 #[ts(export, export_to = "types.ts")]
 pub struct PackState {
     pub dir: String,
+    pub native_packwiz: bool,
     pub manifest: Manifest,
     pub lockfile: Option<Lockfile>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -64,13 +65,6 @@ pub struct PackResolved {
 
 pub(crate) fn es<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
-}
-
-pub(crate) fn dist_token(dir: &Path, update_url: &str) -> Option<String> {
-    if !update_url.starts_with("release+https://github.com/") {
-        return None;
-    }
-    saved_dist_token(dir)
 }
 
 pub(crate) fn saved_dist_token(dir: &Path) -> Option<String> {
@@ -137,8 +131,11 @@ where
 {
     let guard = lock_pack(dir).await;
     let snapshot = snapshot(dir);
-    change(dir).map_err(es)?;
+    let result = change(dir);
     undo::record(dir, snapshot);
+    // packwiz can install dependencies before a later request fails. Preserve
+    // the pre-command snapshot even on errors so those partial edits can undo.
+    result.map_err(es)?;
     resolve_held(mr, cf, dir, &guard).await.map_err(es)
 }
 
@@ -186,6 +183,32 @@ pub(crate) async fn resolve_held(
     dir: &Path,
     _held: &PackGuard,
 ) -> anyhow::Result<PackResolved> {
+    if crate::native::is_native(dir) {
+        let lockfile = crate::native::lockfile(dir)?;
+        let count = lockfile.mods.len() as u32;
+        return Ok(PackResolved {
+            manifest: manifest::read(dir)?,
+            lockfile,
+            validations: vec![Validation {
+                id: "packwiz-dependency-health".into(),
+                key: "pack".into(),
+                severity: "info".into(),
+                title: "Native packwiz dependency validation is not connected yet".into(),
+                detail: "Packdesk reads pinned metadata and delegates installation to packwiz. This preview does not certify dependency compatibility.".into(),
+                project_id: None,
+                fix: None,
+            }],
+            health: Health {
+                ok: true,
+                errors: 0,
+                warnings: 0,
+                infos: 1,
+                mod_count: count,
+                dependency_count: 0,
+            },
+            suggested: vec![],
+        });
+    }
     let manifest = manifest::read(dir)?;
     let all =
         content::without_duplicates(content::merge_same_files(content::read_all_checked(dir)?));

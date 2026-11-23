@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ubuntu-24.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +46,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
@@ -55,6 +58,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
       - run: pnpm install --frozen-lockfile
+      - name: Build bundled packwiz
+        run: |
+          ./bin/prepare-packwiz
+          echo "PACKDESK_PACKWIZ=$PWD/src-tauri/binaries/packwiz-$(rustc -vV | sed -n 's/^host: //p')" >> "$GITHUB_ENV"
       - name: Build the frontend
         run: pnpm exec vite build
       - name: Format
@@ -70,18 +77,3 @@ jobs:
       - name: Generated types are committed
         if: runner.os == 'Linux'
         run: git diff --exit-code -- src/lib/tauri/types.ts
-
-  updater:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-      - name: Compile
-        working-directory: installer
-        run: |
-          mkdir -p build/stubs build/classes
-          javac --release 8 -nowarn -d build/stubs $(find stubs -name '*.java')
-          javac --release 8 -nowarn -cp build/stubs -d build/classes Packweaver.java PackweaverFabric.java PackweaverForge.java PackweaverNeo.java

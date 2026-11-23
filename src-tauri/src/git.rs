@@ -807,6 +807,9 @@ pub fn ignored(dir: &Path, path: &str) -> bool {
 }
 
 pub fn reset_index_json(dir: &Path) {
+    if crate::native::is_native(dir) {
+        return;
+    }
     if !is_repo(dir) {
         return;
     }
@@ -1514,6 +1517,7 @@ pub fn show_file(dir: &Path, reference: &str, file: &str) -> Result<String> {
 }
 
 pub fn tree_blobs(dir: &Path, reference: &str, subpath: &str) -> Vec<(String, String)> {
+    let subpath = if subpath.is_empty() { "." } else { subpath };
     git(
         dir,
         &[

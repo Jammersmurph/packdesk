@@ -16,6 +16,7 @@
 	import { instance } from '@/lib/state/instance.svelte'
 	import { panels } from '@/lib/state/panels.svelte'
 	import { tabs } from '@/lib/state/tabs.svelte'
+	import { tasks } from '@/lib/state/tasks.svelte'
 	import { toasts } from '@/lib/state/toasts.svelte'
 	import { windowState } from '@/lib/state/window.svelte'
 	import { ws } from '@/lib/state/workspace.svelte'
@@ -62,6 +63,11 @@
 				void content.recheckDropped()
 			}),
 			win.onCloseRequested(async (event) => {
+				if (tasks.current) {
+					event.preventDefault()
+					toasts.info('Wait for the current operation to finish before closing Packdesk.')
+					return
+				}
 				if (files.dirty.length === 0) return
 				event.preventDefault()
 				if (await confirmUnsaved()) await win.destroy()

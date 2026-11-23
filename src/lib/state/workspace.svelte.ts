@@ -3,7 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 
 import { mainFolder } from '@/lib/tauri/git'
 import { openPack, packIcon, pinLoaderVersion, saveManifest } from '@/lib/tauri/pack'
-import { includePackweaver } from '@/lib/tauri/release'
+import { includePackwizInstaller } from '@/lib/tauri/release'
 import type { Manifest, TabPayload } from '@/lib/tauri/types'
 import { attachWindow } from '@/lib/tauri/windows'
 import { sameDir } from '@/lib/util/path'
@@ -31,6 +31,7 @@ export interface OpenOptions {
 
 class Workspace {
 	dir = $state<string | null>(null)
+	nativePackwiz = $state(false)
 	mainDir = $state<string | null>(null)
 	manifest = $state<Manifest | null>(null)
 	icon = $state<string | null>(null)
@@ -69,6 +70,7 @@ class Workspace {
 			)
 			this.#reset()
 			this.dir = state.dir
+			this.nativePackwiz = state.nativePackwiz
 			this.mainDir = mainDir
 			this.manifest = state.manifest
 			this.detached = options.detached === true
@@ -86,9 +88,9 @@ class Workspace {
 			this.ensureLoaderVersion()
 			if (state.warning) tasks.fail('Upgrading the pack', state.warning)
 			if (app.pack(mainDir).release.updates === 'url' && !this.detached) {
-				void includePackweaver(state.dir)
+				void includePackwizInstaller(state.dir)
 					.then(() => this.changed())
-					.catch(tasks.or('Adding packweaver to the pack', undefined))
+					.catch(tasks.or('Adding the packwiz installer to the pack', undefined))
 			}
 			return 'opened'
 		} catch (error) {
@@ -200,6 +202,7 @@ class Workspace {
 		this.detached = false
 		this.#pinTried = ''
 		this.dir = null
+		this.nativePackwiz = false
 		this.mainDir = null
 		this.manifest = null
 		this.icon = null

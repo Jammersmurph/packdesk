@@ -71,6 +71,9 @@ pub struct DropTarget {
 }
 
 impl Windows {
+    pub fn open_initial(&self, dir: PathBuf) {
+        self.register(MAIN_LABEL, dir, false);
+    }
     fn primary(&self, dir: &Path) -> Option<String> {
         let packs = self.packs.lock().ok()?;
         packs

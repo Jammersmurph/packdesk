@@ -26,6 +26,9 @@ fn bound_instance(dir: &Path) -> Result<PathBuf, String> {
 #[tauri::command]
 pub async fn bind_instance(path: String, instance: String) -> Result<DetectedInstance, String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        return Err("Instance syncing for native packwiz packs is not available yet. Use packwiz-installer with your launcher.".into());
+    }
     let inst = PathBuf::from(&instance);
     let pack_real = crate::util::real_path(&dir);
     let inst_real = crate::util::real_path(&inst);
@@ -74,6 +77,11 @@ pub async fn sync_status(
     cf: State<'_, CurseForge>,
     path: String,
 ) -> Result<SyncReport, String> {
+    if crate::native::is_native(Path::new(&path)) {
+        return Err(
+            "Native packwiz instance sync is not implemented. Use packwiz-installer.".into(),
+        );
+    }
     sync::status(&mr, &cf, Path::new(&path)).await.map_err(es)
 }
 
@@ -86,6 +94,11 @@ pub async fn apply_sync(
     label: String,
 ) -> Result<PackResolved, String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        return Err(
+            "Native packwiz instance sync is not implemented. Use packwiz-installer.".into(),
+        );
+    }
     let instance = bound_instance(&dir)?;
     let paused = ops
         .iter()
@@ -216,6 +229,13 @@ pub async fn auto_push_file(
 
 #[tauri::command]
 pub async fn read_ignore(path: String, kind: IgnoreKind) -> Result<String, String> {
+    if crate::native::is_native(Path::new(&path)) && matches!(kind, IgnoreKind::Export) {
+        return match std::fs::read_to_string(Path::new(&path).join(".packwizignore")) {
+            Ok(source) => Ok(source),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
+            Err(error) => Err(es(error)),
+        };
+    }
     Ok(packignore::read(Path::new(&path), kind))
 }
 
@@ -226,6 +246,14 @@ pub async fn default_ignore(kind: IgnoreKind) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn write_ignore(path: String, kind: IgnoreKind, content: String) -> Result<(), String> {
+    if crate::native::is_native(Path::new(&path)) && matches!(kind, IgnoreKind::Export) {
+        return blocking(move || {
+            let root = Path::new(&path);
+            crate::native::atomic_write(&root.join(".packwizignore"), content.as_bytes())?;
+            crate::native::refresh(root)
+        })
+        .await;
+    }
     packignore::write(Path::new(&path), kind, &content).map_err(es)
 }
 

@@ -221,6 +221,9 @@ pub async fn add_dropped(
     items: Vec<dropped::DroppedFile>,
 ) -> Result<PackResolved, String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) && items.iter().any(|item| item.matched.is_none()) {
+        return Err("Unmatched local files are not supported in native content management yet. Put them in the pack's mods folder and refresh with packwiz.".into());
+    }
     let label = match items.as_slice() {
         [one] => format!("Add {}", one.filename),
         many => format!("Add {} files", many.len()),

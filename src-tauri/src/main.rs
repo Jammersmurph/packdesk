@@ -27,6 +27,7 @@ mod manifest;
 mod modmeta;
 mod modrinth;
 mod mrpack;
+mod native;
 mod nbt;
 mod packdiff;
 mod packignore;
@@ -71,6 +72,24 @@ fn dbus_session_available() -> bool {
 }
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let mut args = std::env::args().skip(1);
+    if let Some(first) = args.next() {
+        let path = if first == "open" {
+            args.next()
+        } else {
+            Some(first)
+        };
+        if let Some(path) = path {
+            let path = std::path::PathBuf::from(path);
+            let dir = if path.is_file() {
+                path.parent().unwrap().to_path_buf()
+            } else {
+                path
+            };
+            app.state::<commands::Windows>()
+                .open_initial(dir.canonicalize().unwrap_or(dir));
+        }
+    }
     if let Ok(base) = app.path().data_dir() {
         let root = base.join("packdesk");
         let cache = root.join("cache");
@@ -93,6 +112,9 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() {
+    if let Some(code) = native::cli() {
+        std::process::exit(code);
+    }
     #[cfg(target_os = "linux")]
     if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
@@ -214,7 +236,7 @@ fn main() {
             commands::export_curseforge,
             commands::export_instance,
             commands::release_folder,
-            commands::include_packweaver,
+            commands::include_packwiz_installer,
             commands::release_checkout,
             commands::git_upstream_head,
             commands::git_mark_tag,

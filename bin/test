@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+cd "$ROOT"
+"$ROOT/bin/prepare-packwiz"
+TARGET="${PACKDESK_TARGET:-$(rustc -vV | sed -n 's/^host: //p')}"
+export PACKDESK_PACKWIZ="$ROOT/src-tauri/binaries/packwiz-$TARGET"
+if command -v pnpm >/dev/null 2>&1; then
+    pnpm check
+    pnpm exec vite build
+else
+    npm exec --yes pnpm@10.33.2 -- check
+    npm exec --yes pnpm@10.33.2 -- exec vite build
+fi
+cargo test --manifest-path src-tauri/Cargo.toml --locked "$@"

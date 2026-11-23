@@ -266,6 +266,9 @@ fn slug_for(pref_slug: &str, name: &str) -> String {
 }
 
 pub fn item_rel_path(item: &ContentItem) -> String {
+    if item.file.ends_with(".pw.toml") {
+        return item.file.clone();
+    }
     format!(
         "{CONTENT_DIR}/{}/{}.json",
         type_dir(item.project_type),
@@ -314,10 +317,16 @@ pub fn names_label(pack_dir: &Path, keys: &[String]) -> String {
 }
 
 pub fn read_all(pack_dir: &Path) -> Vec<ContentItem> {
+    if crate::native::is_native(pack_dir) {
+        return crate::native::read_items(pack_dir).unwrap_or_default();
+    }
     scan(pack_dir).0
 }
 
 pub fn read_all_checked(pack_dir: &Path) -> Result<Vec<ContentItem>> {
+    if crate::native::is_native(pack_dir) {
+        return crate::native::read_items(pack_dir);
+    }
     let (items, broken) = scan(pack_dir);
     match broken.first() {
         Some(path) => {
@@ -379,6 +388,9 @@ fn repair_item(path: &Path, text: &str) -> Option<ContentItem> {
 }
 
 pub fn add_item(pack_dir: &Path, item: &ContentItem) -> Result<()> {
+    if crate::native::is_native(pack_dir) {
+        return crate::native::save_item(pack_dir, item);
+    }
     let path = item_path(pack_dir, item.project_type, &file_stem(item));
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
@@ -397,6 +409,12 @@ pub fn remove_item(pack_dir: &Path, key: &str) -> Result<()> {
 }
 
 pub fn delete_content(pack_dir: &Path, keys: &[String]) -> Result<()> {
+    if crate::native::is_native(pack_dir) {
+        for key in keys {
+            crate::native::remove(pack_dir, key)?;
+        }
+        return Ok(());
+    }
     let items = read_all(pack_dir);
     let target: std::collections::HashSet<String> = items
         .iter()
@@ -668,6 +686,11 @@ fn staged_manifest(pack_dir: &Path, staged: &[(String, String)]) -> Option<Manif
 }
 
 pub(crate) fn stage_index(pack_dir: &Path) -> Result<()> {
+    // packwiz refresh updates its coupled manifest/index hashes on mutation.
+    // Never generate the upstream JSON index in a native pack.
+    if crate::native::is_native(pack_dir) {
+        return crate::native::stage_index(pack_dir);
+    }
     let tracked = crate::git::tracks(pack_dir, INDEX_FILE);
     if !tracked
         && (!pack_dir.join(INDEX_FILE).is_file() || crate::git::ignored(pack_dir, INDEX_FILE))
@@ -743,6 +766,9 @@ pub(crate) fn stage_index(pack_dir: &Path) -> Result<()> {
 }
 
 pub(crate) fn write_index(pack_dir: &Path) -> Result<()> {
+    if crate::native::is_native(pack_dir) {
+        return crate::native::refresh(pack_dir);
+    }
     let filter = ExportFilter::load(pack_dir);
     let manifest = crate::manifest::read(pack_dir).ok();
     let disabled: std::collections::HashSet<String> = read_all(pack_dir)

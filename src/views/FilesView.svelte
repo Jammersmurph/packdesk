@@ -184,6 +184,21 @@
 </div>
 <div class="scroll">
 	<div class="root">
+		{#each rootEntries.filter((entry) => entry.isDir && entry.name !== OVERRIDES && entry.name !== 'content') as entry (entry.name)}
+			{@const rel = entry.name}
+			<SideItem
+				label={entry.name}
+				depth={0}
+				active={files.focus?.rel === rel}
+				onclick={() => toggle(rel)}
+			>
+				{#snippet lead()}<Icon
+						icon={files.expanded[rel] ? ChevronDown : ChevronRight}
+						size={12}
+					/>{/snippet}
+			</SideItem>
+			{#if files.expanded[rel]}{@render tree(rel, 1)}{/if}
+		{/each}
 		{#if (files.listings[OVERRIDES] ?? []).length === 0}
 			<div class="quiet small">No files yet</div>
 		{/if}

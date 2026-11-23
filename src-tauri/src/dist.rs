@@ -11,88 +11,16 @@ use crate::manifest::{self, Manifest};
 use crate::packignore::ExportFilter;
 use crate::ptype::Folders;
 
-pub(crate) const INSTALLER: &[u8] = include_bytes!("../../installer/packweaver.jar");
-pub(crate) const INSTALLER_JAR: &str = "packweaver.jar";
-pub(crate) const PACK_JAR: &str = "overrides/packweaver.jar";
-pub(crate) const PACK_MOD_JAR: &str = "overrides/mods/packweaver.jar";
-
-pub fn include_installer(pack_dir: &Path) -> Result<()> {
-    let path = pack_dir.join(PACK_JAR);
-    if std::fs::read(&path).ok().as_deref() != Some(INSTALLER) {
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::write(&path, INSTALLER)?;
-    }
-    crate::content::write_index(pack_dir)
-}
-
-pub fn export_dist(
-    pack_dir: &Path,
-    out_zip: &Path,
-    pack_url: &str,
-    loader_version: Option<&str>,
-    token: Option<&str>,
-) -> Result<()> {
-    let mut manifest = manifest::read(pack_dir)?;
-    if manifest.loader_version.as_deref().unwrap_or("").is_empty() {
-        manifest.loader_version = loader_version.map(str::to_string);
-    }
-    let url = pack_url.trim_end_matches('/').to_string();
-    let icon = icon_bytes(pack_dir);
-    write_prism_instance(&manifest, &url, out_zip, icon.as_deref(), token)?;
-    Ok(())
-}
+// Packdesk does not bundle Packweave's self-updating launcher mod. Native
+// packwiz packs use packwiz-installer instead; these names are retained only so
+// legacy project files can be recognised and ignored safely.
+pub(crate) const INSTALLER: &[u8] = &[];
+pub(crate) const INSTALLER_JAR: &str = "packdesk-installer.jar";
+pub(crate) const PACK_JAR: &str = "overrides/packdesk-installer.jar";
+pub(crate) const PACK_MOD_JAR: &str = "overrides/mods/packdesk-installer.jar";
 
 fn icon_bytes(pack_dir: &Path) -> Option<Vec<u8>> {
     std::fs::read(instance::overrides_dir(pack_dir).join("icon.png")).ok()
-}
-
-fn write_prism_instance(
-    manifest: &Manifest,
-    url: &str,
-    out_zip: &Path,
-    icon: Option<&[u8]>,
-    token: Option<&str>,
-) -> Result<()> {
-    let file = std::fs::File::create(out_zip)?;
-    let mut zip = zip::ZipWriter::new(file);
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-
-    let key = icon_key(&manifest.name);
-    let mut cfg = format!(
-        "InstanceType=OneSix\nname={}\nOverrideJavaArgs=true\nJvmArgs=-javaagent:{}\n",
-        manifest.name, INSTALLER_JAR
-    );
-    if icon.is_some() {
-        cfg.push_str(&format!("iconKey={key}\n"));
-    }
-    zip.start_file("instance.cfg", options)?;
-    zip.write_all(cfg.as_bytes())?;
-
-    if let Some(bytes) = icon {
-        zip.start_file(format!("{key}.png"), options)?;
-        zip.write_all(bytes)?;
-    }
-
-    zip.start_file("mmc-pack.json", options)?;
-    zip.write_all(mmc_pack(manifest)?.as_bytes())?;
-
-    zip.start_file(".minecraft/modpack.url", options)?;
-    zip.write_all(format!("{url}\n").as_bytes())?;
-
-    if let Some(t) = token.filter(|t| !t.is_empty()) {
-        zip.start_file(".minecraft/modpack.token", options)?;
-        zip.write_all(format!("{t}\n").as_bytes())?;
-    }
-
-    for folder in [".minecraft", ".minecraft/mods"] {
-        zip.start_file(format!("{folder}/{INSTALLER_JAR}"), options)?;
-        zip.write_all(INSTALLER)?;
-    }
-
-    zip.finish()?;
-    Ok(())
 }
 
 pub async fn export_instance(

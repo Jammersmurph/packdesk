@@ -4,7 +4,6 @@ use tauri::State;
 use crate::cfpack;
 use crate::curseforge::CurseForge;
 use crate::dist;
-use crate::instance;
 use crate::lockfile::{self, Lockfile};
 use crate::manifest::{self, Manifest};
 use crate::modrinth::Modrinth;
@@ -14,7 +13,7 @@ use crate::ptype::Folders;
 use crate::publish::{self, Bundling};
 use crate::secrets;
 
-use super::{blocking, dist_token, es, resolve_loader_version};
+use super::{blocking, es, resolve_loader_version};
 
 #[tauri::command]
 pub async fn export_mrpack(
@@ -24,6 +23,25 @@ pub async fn export_mrpack(
     env: String,
 ) -> Result<(), String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        if env != "client" {
+            return Err("packwiz's Modrinth export does not support a server-only target. Use CurseForge export with the server side.".into());
+        }
+        let _held = super::lock_pack(&dir).await;
+        return blocking(move || {
+            crate::native::run(
+                &dir,
+                &[
+                    "modrinth".into(),
+                    "export".into(),
+                    "--output".into(),
+                    output,
+                ],
+            )
+            .map(|_| ())
+        })
+        .await;
+    }
     let filter = ExportFilter::load(&dir);
     let mut lock = lockfile::read(&dir).map_err(es)?;
     lock.mods.retain(|m| !m.disabled && !filter.skips_mod(m));
@@ -50,6 +68,24 @@ pub async fn export_curseforge(
     env: String,
 ) -> Result<(), String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        let _held = super::lock_pack(&dir).await;
+        return blocking(move || {
+            crate::native::run(
+                &dir,
+                &[
+                    "curseforge".into(),
+                    "export".into(),
+                    "--side".into(),
+                    env,
+                    "--output".into(),
+                    output,
+                ],
+            )
+            .map(|_| ())
+        })
+        .await;
+    }
     let filter = ExportFilter::load(&dir);
     let mut lock = lockfile::read(&dir).map_err(es)?;
     lock.mods.retain(|m| !m.disabled && !filter.skips_mod(m));
@@ -76,6 +112,9 @@ pub async fn export_instance(
     env: String,
 ) -> Result<(), String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        return Err("Prism instance exports for native packwiz packs are not available yet. Export a .mrpack and import it in Prism.".into());
+    }
     let manifest = manifest::read(&dir).map_err(es)?;
     let lv = resolve_loader_version(&mr, &manifest).await;
     dist::export_instance(&dir, &PathBuf::from(output), &env, lv.as_deref())
@@ -121,9 +160,19 @@ pub async fn release_checkout_remove(path: String, folder: String) -> Result<(),
 }
 
 #[tauri::command]
-pub async fn include_packweaver(path: String) -> Result<(), String> {
+pub async fn include_packwiz_installer(path: String) -> Result<(), String> {
+    let native = crate::native::is_native(Path::new(&path));
     let _held = super::lock_pack(&PathBuf::from(&path)).await;
-    blocking(move || dist::include_installer(&PathBuf::from(&path))).await
+    blocking(move || {
+        if native {
+            crate::native::include_installer(&PathBuf::from(&path))
+        } else {
+            Err(anyhow::anyhow!(
+                "Legacy Packweave packs are not supported by Packdesk."
+            ))
+        }
+    })
+    .await
 }
 
 #[tauri::command]
@@ -133,21 +182,11 @@ pub async fn export_mrpack_selfupdate(
     output: String,
     url: String,
 ) -> Result<(), String> {
-    let dir = PathBuf::from(&path);
-    let mut manifest = manifest::read(&dir).map_err(es)?;
-    manifest.loader_version = resolve_loader_version(&mr, &manifest).await;
-    let overrides = instance::overrides_dir(&dir);
-    let token = dist_token(&dir, &url);
-    mrpack::export_selfupdate(
-        &manifest,
-        &PathBuf::from(output),
-        &url,
-        &overrides,
-        dist::INSTALLER,
-        dist::INSTALLER_JAR,
-        token.as_deref(),
+    let _ = (mr, path, output, url);
+    Err(
+        "Packdesk does not bundle a game-side updater. Use a regular Modrinth export instead."
+            .into(),
     )
-    .map_err(es)
 }
 
 #[tauri::command]
@@ -157,19 +196,11 @@ pub async fn export_curseforge_selfupdate(
     output: String,
     url: String,
 ) -> Result<(), String> {
-    let dir = PathBuf::from(&path);
-    let mut manifest = manifest::read(&dir).map_err(es)?;
-    manifest.loader_version = resolve_loader_version(&mr, &manifest).await;
-    let token = dist_token(&dir, &url);
-    cfpack::export_selfupdate(
-        &manifest,
-        &PathBuf::from(output),
-        &url,
-        dist::INSTALLER,
-        dist::INSTALLER_JAR,
-        token.as_deref(),
+    let _ = (mr, path, output, url);
+    Err(
+        "Packdesk does not bundle a game-side updater. Use a regular CurseForge export instead."
+            .into(),
     )
-    .map_err(es)
 }
 
 #[tauri::command]
@@ -179,21 +210,17 @@ pub async fn export_dist(
     output: String,
     pack_url: String,
 ) -> Result<(), String> {
-    let dir = PathBuf::from(&path);
-    let manifest = manifest::read(&dir).map_err(es)?;
-    let lv = resolve_loader_version(&mr, &manifest).await;
-    let token = dist_token(&dir, &pack_url);
-    dist::export_dist(
-        &dir,
-        &PathBuf::from(output),
-        &pack_url,
-        lv.as_deref(),
-        token.as_deref(),
+    let _ = (mr, path, output, pack_url);
+    Err(
+        "Packdesk does not bundle a game-side updater. Use a regular instance export instead."
+            .into(),
     )
-    .map_err(es)
 }
 
 fn publish_inputs(dir: &Path) -> Result<(Lockfile, Manifest, Vec<PackFile>), String> {
+    if crate::native::is_native(dir) {
+        return Err("Publish a packwiz export manually for now. One-click publishing is not available for native packwiz packs yet.".into());
+    }
     let filter = ExportFilter::load(dir);
     let mut lock = lockfile::read(dir).map_err(es)?;
     lock.mods.retain(|m| !m.disabled && !filter.skips_mod(m));

@@ -76,8 +76,8 @@
 				<div>
 					<h1 class="title-display">Packdesk</h1>
 					<p>
-						A friendly workspace for packwiz and Git. Browse mods, review your changes,
-						and build your next Minecraft modpack.
+						A friendly workspace for packwiz and Git. Browse mods, review your changes, and build
+						your next Minecraft modpack.
 					</p>
 				</div>
 			</header>

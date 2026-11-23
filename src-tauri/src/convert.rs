@@ -40,7 +40,10 @@ pub fn convertible(dir: &Path) -> bool {
 
 pub fn info(dir: &Path) -> Result<Option<ConvertInfo>> {
     if crate::packwiz::is_packwiz(dir) {
-        return crate::packwiz::info(dir).map(Some);
+        crate::packwiz::info(dir)?;
+        // Native packs open directly; never offer the destructive upstream
+        // conversion that replaces packwiz metadata with content/*.json.
+        return Ok(None);
     }
     if crate::pakku::is_pakku(dir) {
         return crate::pakku::info(dir).map(Some);

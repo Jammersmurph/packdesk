@@ -18,7 +18,7 @@
 		secretStatus,
 	} from '@/lib/tauri/app'
 	import { compare, githubAccess, latestTag, packUrl } from '@/lib/tauri/git'
-	import { includePackweaver } from '@/lib/tauri/release'
+	import { includePackwizInstaller } from '@/lib/tauri/release'
 	import type { Channel, GithubAccess, PackDiff } from '@/lib/tauri/types'
 	import { openExternal, openSettingsWindow } from '@/lib/tauri/windows'
 	import { githubRepo } from '@/lib/util/text'
@@ -177,9 +177,9 @@
 		update((r) => (r.updates = value))
 		const dir = ws.dir
 		if (value !== 'url' || !dir) return
-		void includePackweaver(dir)
+		void includePackwizInstaller(dir)
 			.then(() => ws.changed())
-			.catch(tasks.or('Adding packweaver to the pack', undefined))
+			.catch(tasks.or('Adding the packwiz installer to the pack', undefined))
 	}
 
 	function setRepo(value: string): void {
@@ -438,7 +438,7 @@
 		</div>
 		{#if selfUpdating}
 			<div class="line small hint">
-				Self-updating exports hold packweaver and download the pack when the game starts
+				Packdesk does not bundle a game-side updater yet; publish a regular export instead
 			</div>
 		{/if}
 	</section>

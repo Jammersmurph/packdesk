@@ -26,7 +26,9 @@ export const IGNORE_FILES: Record<IgnoreKind, { file: string; hint: string }> = 
 		hint: 'Ignored by Git and Instance Sync',
 	},
 	export: {
-		file: '.packweaveignore',
+		get file() {
+			return ws.nativePackwiz ? '.packwizignore' : '.packweaveignore'
+		},
 		hint: 'Not included in Exports',
 	},
 }

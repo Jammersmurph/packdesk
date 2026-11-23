@@ -1,2 +1,0 @@
-Main-Class: packweaver.Packweaver
-Premain-Class: packweaver.Packweaver

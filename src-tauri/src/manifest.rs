@@ -73,10 +73,16 @@ fn default_version() -> String {
 }
 
 pub fn path_for(dir: &Path) -> PathBuf {
+    if crate::native::is_native(dir) {
+        return dir.join(crate::native::PACK_FILE);
+    }
     dir.join(MANIFEST_FILE)
 }
 
 pub fn read(dir: &Path) -> Result<Manifest> {
+    if crate::native::is_native(dir) {
+        return crate::native::read_manifest(dir);
+    }
     let p = path_for(dir);
     let text = std::fs::read_to_string(&p)
         .map_err(|e| anyhow::anyhow!("Couldn't read {}: {e}", p.display()))?;
@@ -110,6 +116,9 @@ pub fn read(dir: &Path) -> Result<Manifest> {
 }
 
 pub fn write(dir: &Path, manifest: &Manifest) -> Result<()> {
+    if crate::native::is_native(dir) {
+        return crate::native::write_manifest(dir, manifest);
+    }
     let p = path_for(dir);
     let text = serde_json::to_string_pretty(manifest)?;
     std::fs::write(&p, format!("{text}\n"))?;

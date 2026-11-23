@@ -27,6 +27,9 @@ export const OVERRIDES = 'overrides'
 
 export const PACK_FILES = [
 	'.gitignore',
+	'.packwizignore',
+	'pack.toml',
+	'index.toml',
 	'.packweaveignore',
 	'.packweaveunlock',
 	'modpack.json',

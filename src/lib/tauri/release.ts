@@ -15,8 +15,8 @@ export function exportInstance(dir: string, output: string, env: ExportSide): Pr
 	return call('export_instance', { path: dir, output, env })
 }
 
-export function includePackweaver(dir: string): Promise<void> {
-	return call('include_packweaver', { path: dir })
+export function includePackwizInstaller(dir: string): Promise<void> {
+	return call('include_packwiz_installer', { path: dir })
 }
 
 export function releaseFolder(): Promise<string> {

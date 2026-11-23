@@ -136,6 +136,9 @@ pub const DEFAULT_GITATTRIBUTES: &str = "\
 ";
 
 pub fn ensure_gitignore(pack_dir: &Path) -> Result<()> {
+    if crate::native::is_native(pack_dir) {
+        return crate::native::ensure_ignores(pack_dir);
+    }
     let gitignore = pack_dir.join(GITIGNORE_FILE);
     if !gitignore.exists() {
         crate::util::write_file(&gitignore, DEFAULT_GITIGNORE)?;

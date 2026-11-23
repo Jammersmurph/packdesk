@@ -42,42 +42,6 @@ struct Plan {
     left_out: Vec<String>,
 }
 
-pub fn export_selfupdate(
-    manifest: &Manifest,
-    output: &Path,
-    url: &str,
-    installer: &[u8],
-    installer_name: &str,
-    token: Option<&str>,
-) -> Result<()> {
-    let cf_manifest = manifest_json(
-        &manifest.minecraft,
-        &manifest.loader,
-        manifest.loader_version.as_deref(),
-        &manifest.name,
-        "",
-        &[],
-    );
-
-    let file = std::fs::File::create(output)?;
-    let mut zip = zip::ZipWriter::new(file);
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-    zip.start_file("manifest.json", options)?;
-    zip.write_all(serde_json::to_string_pretty(&cf_manifest)?.as_bytes())?;
-    for folder in ["overrides", "overrides/mods"] {
-        zip.start_file(format!("{folder}/{installer_name}"), options)?;
-        zip.write_all(installer)?;
-    }
-    zip.start_file("overrides/modpack.url", options)?;
-    zip.write_all(format!("{}\n", url.trim_end_matches('/')).as_bytes())?;
-    if let Some(t) = token.filter(|t| !t.is_empty()) {
-        zip.start_file("overrides/modpack.token", options)?;
-        zip.write_all(format!("{t}\n").as_bytes())?;
-    }
-    zip.finish()?;
-    Ok(())
-}
-
 fn pack_env(env: &str) -> &str {
     if env == "server" {
         "server"

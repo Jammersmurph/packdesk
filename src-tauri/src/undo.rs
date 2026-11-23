@@ -29,6 +29,23 @@ impl Snapshot {
     }
 
     pub fn pack(pack_dir: &Path, label: impl Into<String>) -> Self {
+        if crate::native::is_native(pack_dir) {
+            // Capture only the index, manifest, and metadata trees, not .git or
+            // unrelated originals. New metadata files must be removed on undo.
+            let mut snapshot = Snapshot::new(label).file(&pack_dir.join(crate::native::PACK_FILE));
+            if let Ok(index) = crate::native::index_relative(pack_dir) {
+                snapshot = snapshot.file(&pack_dir.join(index));
+            }
+            for folder in ["mods", "resourcepacks", "shaderpacks", "datapacks"] {
+                snapshot = snapshot.dir(&pack_dir.join(folder));
+            }
+            if let Ok(items) = crate::native::read_items(pack_dir) {
+                for item in items {
+                    snapshot = snapshot.file(&pack_dir.join(item.file));
+                }
+            }
+            return snapshot;
+        }
         Snapshot::new(label)
             .dir(&content::content_dir(pack_dir))
             .file(&manifest::path_for(pack_dir))

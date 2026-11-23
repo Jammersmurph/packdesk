@@ -149,7 +149,7 @@ pub fn root_of(path: &Path) -> Option<PathBuf> {
 }
 
 pub fn is_packwiz(dir: &Path) -> bool {
-    dir.join(PACK_FILE).is_file() && !manifest::path_for(dir).is_file()
+    crate::native::is_native(dir)
 }
 
 pub fn info(dir: &Path) -> Result<ConvertInfo> {

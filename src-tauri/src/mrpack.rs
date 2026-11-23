@@ -45,52 +45,6 @@ fn file_entry(path: &str, url: &str, sha1: &str, sha512: &str, size: u64, m: &Lo
     })
 }
 
-pub fn export_selfupdate(
-    manifest: &Manifest,
-    output: &Path,
-    url: &str,
-    overrides_dir: &Path,
-    installer: &[u8],
-    installer_name: &str,
-    token: Option<&str>,
-) -> Result<()> {
-    let mut deps = Map::new();
-    deps.insert("minecraft".into(), json!(manifest.minecraft));
-    if let (Some(key), Some(version)) = (loader_key(&manifest.loader), &manifest.loader_version) {
-        deps.insert(key.into(), json!(version));
-    }
-    let index = json!({
-        "formatVersion": 1,
-        "game": "minecraft",
-        "versionId": "",
-        "name": manifest.name,
-        "files": [],
-        "dependencies": Value::Object(deps),
-    });
-
-    let file = std::fs::File::create(output)?;
-    let mut zip = zip::ZipWriter::new(file);
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-    zip.start_file("modrinth.index.json", options)?;
-    zip.write_all(serde_json::to_string_pretty(&index)?.as_bytes())?;
-    for folder in ["overrides", "overrides/mods"] {
-        zip.start_file(format!("{folder}/{installer_name}"), options)?;
-        zip.write_all(installer)?;
-    }
-    zip.start_file("overrides/modpack.url", options)?;
-    zip.write_all(format!("{}\n", url.trim_end_matches('/')).as_bytes())?;
-    if let Some(t) = token.filter(|t| !t.is_empty()) {
-        zip.start_file("overrides/modpack.token", options)?;
-        zip.write_all(format!("{t}\n").as_bytes())?;
-    }
-    if let Ok(icon) = std::fs::read(overrides_dir.join("icon.png")) {
-        zip.start_file("overrides/icon.png", options)?;
-        zip.write_all(&icon)?;
-    }
-    zip.finish()?;
-    Ok(())
-}
-
 fn override_folder(env: &str, server: bool) -> Option<&'static str> {
     match env {
         "server" if !server => None,

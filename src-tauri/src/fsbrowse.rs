@@ -39,6 +39,9 @@ pub struct FileContent {
 }
 
 pub fn resolve(root: &str, rel: &str) -> Result<PathBuf> {
+    if crate::native::is_native(Path::new(root)) && !rel.is_empty() && rel != "." {
+        return crate::native::safe_path(Path::new(root), rel);
+    }
     use std::path::Component;
     if rel.split(['/', '\\']).any(|c| c == "..")
         || rel.starts_with(['/', '\\'])
@@ -151,7 +154,7 @@ pub fn write_file(root: &str, rel: &str, content: &str) -> Result<()> {
     if let Some(parent) = p.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(p, content)?;
+    crate::native::atomic_write(&p, content.as_bytes())?;
     Ok(())
 }
 

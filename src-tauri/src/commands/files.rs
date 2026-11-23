@@ -19,7 +19,15 @@ pub async fn fs_read(root: String, rel: String) -> Result<FileContent, String> {
 
 #[tauri::command]
 pub async fn fs_write(root: String, rel: String, content: String) -> Result<(), String> {
-    fsbrowse::write_file(&root, &rel, &content).map_err(es)
+    let _held = super::lock_pack(Path::new(&root)).await;
+    blocking(move || {
+        fsbrowse::write_file(&root, &rel, &content)?;
+        if crate::native::is_native(Path::new(&root)) {
+            crate::native::refresh(Path::new(&root))?;
+        }
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]

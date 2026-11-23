@@ -5,6 +5,7 @@
 	import { changeMark, changeWord, displayPath, plainFiles } from '@/lib/git/changes'
 	import { content } from '@/lib/state/content.svelte'
 	import { git } from '@/lib/state/git.svelte'
+	import { ws } from '@/lib/state/workspace.svelte'
 	import { plural } from '@/lib/util/format'
 	import Dialog from '@/ui/Dialog.svelte'
 	import TextField from '@/ui/TextField.svelte'
@@ -41,6 +42,12 @@
 </script>
 
 <Dialog {title} width={560} onclose={() => close()}>
+	{#if ws.nativePackwiz}
+		<p class="small hint">
+			Packdesk rebuilds and includes pack.toml and index.toml hashes for your selected files.
+			Unselected content stays uncommitted.
+		</p>
+	{/if}
 	{#if paths.length > 0}
 		<div class="form-field">
 			<span class="label">Message</span>

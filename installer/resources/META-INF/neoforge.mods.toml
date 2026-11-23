@@ -1,9 +1,0 @@
-modLoader="javafml"
-loaderVersion="[1,)"
-license="All Rights Reserved"
-
-[[mods]]
-modId="packweaver"
-version="2.0.0"
-displayName="packweaver"
-description="Keeps this instance in sync with its pack."

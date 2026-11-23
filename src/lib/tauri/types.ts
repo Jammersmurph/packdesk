@@ -132,7 +132,7 @@ export type PackFileChange = { status: string, path: string, };
 
 export type PackResolved = { manifest: Manifest, lockfile: Lockfile, validations: Array<Validation>, health: Health, suggested: Array<Suggested>, };
 
-export type PackState = { dir: string, manifest: Manifest, lockfile: Lockfile | null, converted?: Converted, warning?: string, };
+export type PackState = { dir: string, nativePackwiz: boolean, manifest: Manifest, lockfile: Lockfile | null, converted?: Converted, warning?: string, };
 
 export type ProjectDetails = { id: string, slug: string, title: string, description: string, iconUrl: string | null, clientSide: string | null, serverSide: string | null, url: string, downloads: number, };
 

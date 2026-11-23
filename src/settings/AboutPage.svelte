@@ -19,8 +19,17 @@
 			onclick={() => void openExternal('https://github.com/Jammersmurph/packdesk')}
 			>Source code</button
 		>
-		<button class="btn" onclick={() => void openExternal('https://github.com/Jammersmurph/packdesk/blob/main/LICENSE')}>License</button>
-		<button class="btn" onclick={() => void openExternal('https://github.com/packweavers/packweave')}>Upstream Packweave</button>
+		<button
+			class="btn"
+			onclick={() =>
+				void openExternal('https://github.com/Jammersmurph/packdesk/blob/main/LICENSE')}
+			>License</button
+		>
+		<button
+			class="btn"
+			onclick={() => void openExternal('https://github.com/packweavers/packweave')}
+			>Upstream Packweave</button
+		>
 		<button class="btn" onclick={() => app.info && void openFolder(app.info.dataDir)}
 			>Data folder</button
 		>

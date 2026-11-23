@@ -23,22 +23,10 @@ pub async fn create_pack(
     loader_version: Option<String>,
 ) -> Result<Manifest, String> {
     let dir = PathBuf::from(&path);
-    std::fs::create_dir_all(&dir).map_err(es)?;
-    let manifest = Manifest {
-        name,
-        version: "1.0.0".into(),
-        minecraft,
-        loader,
-        loader_version,
-        channel: manifest::Channel::Release,
-        datapacks: None,
-        override_sides: None,
-        packweave_md: true,
-        format_version: manifest::FORMAT_VERSION,
-    };
-    manifest::write(&dir, &manifest).map_err(es)?;
-    instance::create_defaults(&dir).map_err(es)?;
-    Ok(manifest)
+    blocking(move || {
+        crate::native::create(&dir, &name, &minecraft, &loader, loader_version.as_deref())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -48,6 +36,7 @@ pub async fn open_pack(path: String) -> Result<PackState, String> {
     let warning = instance::ensure_defaults(&dir).err().map(es);
     let lockfile = lockfile::read(&dir).ok();
     Ok(PackState {
+        native_packwiz: crate::native::is_native(&dir),
         dir: path,
         manifest,
         lockfile,
@@ -67,6 +56,10 @@ pub async fn pin_loader_version(
     path: String,
 ) -> Result<Option<Manifest>, String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        // Opening a native pack must never silently change its pinned versions.
+        return Ok(None);
+    }
     let text = std::fs::read_to_string(manifest::path_for(&dir)).map_err(es)?;
     if crate::lenient::has_conflict(&text) {
         return Ok(None);
@@ -97,6 +90,9 @@ pub async fn import_pack(
 ) -> Result<PackState, String> {
     let dest_dir = PathBuf::from(&dest);
     let source = PathBuf::from(&src);
+    if crate::native::is_native(&source) || crate::packwiz::root_of(&source).is_some() {
+        return Err("Open the packwiz folder directly, or clone its Git repository. Native packwiz packs are never converted.".into());
+    }
     let (manifest, converted) = match convert::root_of(&source) {
         Some(root) => {
             let target = dest_dir.clone();
@@ -113,6 +109,7 @@ pub async fn import_pack(
     instance::ensure_defaults(&dest_dir).map_err(es)?;
     let _ = do_resolve(&mr, &cf, &dest_dir).await;
     Ok(PackState {
+        native_packwiz: crate::native::is_native(&dest_dir),
         dir: dest,
         manifest,
         lockfile: lockfile::read(&dest_dir).ok(),
@@ -133,12 +130,16 @@ pub async fn convert_pack(
     path: String,
 ) -> Result<PackState, String> {
     let dir = PathBuf::from(&path);
+    if crate::native::is_native(&dir) {
+        return open_pack(path).await;
+    }
     let target = dir.clone();
     let (manifest, report) = blocking(move || convert::convert(&target, &target)).await?;
     instance::ensure_gitignore(&dir).map_err(es)?;
     instance::ensure_defaults(&dir).map_err(es)?;
     let _ = do_resolve(&mr, &cf, &dir).await;
     Ok(PackState {
+        native_packwiz: crate::native::is_native(&dir),
         dir: path,
         manifest,
         lockfile: lockfile::read(&dir).ok(),
@@ -218,6 +219,7 @@ pub async fn clone_pack(
     instance::ensure_defaults(&dest).map_err(es)?;
     let _ = do_resolve(&mr, &cf, &dest).await;
     Ok(PackState {
+        native_packwiz: crate::native::is_native(&dest),
         dir: dest.to_string_lossy().to_string(),
         manifest,
         lockfile: lockfile::read(&dest).ok(),
@@ -350,6 +352,7 @@ pub async fn preserve_reset(path: String) -> Result<Vec<String>, String> {
 #[tauri::command]
 pub async fn save_manifest(path: String, mut manifest: Manifest) -> Result<(), String> {
     let dir = PathBuf::from(path);
+    let _held = super::lock_pack(&dir).await;
     if let Ok(existing) = manifest::read(&dir) {
         manifest.format_version = manifest.format_version.max(existing.format_version);
     }

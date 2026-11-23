@@ -166,7 +166,14 @@ pub async fn git_fetch(path: String) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn git_discard_files(path: String, files: Vec<String>) -> Result<(), String> {
-    rewriting(path, move |dir| git::revert_files(dir, &files)).await
+    rewriting(path, move |dir| {
+        git::revert_files(dir, &files)?;
+        if crate::native::is_native(dir) {
+            crate::native::refresh(dir)?;
+        }
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -639,6 +646,9 @@ pub async fn github_release(path: String, release: GithubRelease) -> Result<Stri
             "{} isn't a GitHub repository. Use owner/name.",
             release.repo
         ));
+    }
+    if release.updates {
+        return Err("Packdesk does not bundle a game-side updater. Create a release without self-updating assets.".into());
     }
     let tokens = {
         let dir = dir.clone();

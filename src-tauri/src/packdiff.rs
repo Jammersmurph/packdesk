@@ -126,6 +126,27 @@ fn snap_item(item: &ContentItem, fallback: &str) -> SnapItem {
 }
 
 fn snapshot_at(dir: &Path, reference: &str) -> Result<Snapshot> {
+    if let Ok(source) = git::show_file(dir, reference, "pack.toml") {
+        let manifest = crate::native::parse_manifest(&source)?;
+        let blobs: Vec<(String, String)> = git::tree_blobs(dir, reference, "")
+            .into_iter()
+            .filter(|(path, _)| path.ends_with(".pw.toml"))
+            .collect();
+        let oids: Vec<String> = blobs.iter().map(|(_, oid)| oid.clone()).collect();
+        let mut items = BTreeMap::new();
+        git::each_blob(dir, &oids, |i, bytes| {
+            let path = &blobs[i].0;
+            if let Ok(item) = crate::native::parse_item(&String::from_utf8_lossy(bytes), path) {
+                items.insert(path.clone(), snap_item(&item, path));
+            }
+        })?;
+        return Ok(Snapshot {
+            minecraft: manifest.minecraft,
+            loader: manifest.loader,
+            loader_version: manifest.loader_version,
+            items,
+        });
+    }
     let manifest: Manifest =
         serde_json::from_str(&git::show_file(dir, reference, "modpack.json")?)?;
     let mut items = BTreeMap::new();
@@ -154,6 +175,21 @@ fn snapshot_at(dir: &Path, reference: &str) -> Result<Snapshot> {
 }
 
 fn working_snapshot(dir: &Path) -> Snapshot {
+    if crate::native::is_native(dir) {
+        if let Ok(manifest) = crate::native::read_manifest(dir) {
+            let items = crate::native::read_items(dir)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|item| (item.file.clone(), snap_item(&item, &item.file)))
+                .collect();
+            return Snapshot {
+                minecraft: manifest.minecraft,
+                loader: manifest.loader,
+                loader_version: manifest.loader_version,
+                items,
+            };
+        }
+    }
     let (minecraft, loader, loader_version) = match manifest::read(dir) {
         Ok(m) => (m.minecraft, m.loader, m.loader_version),
         Err(_) => (String::new(), String::new(), None),

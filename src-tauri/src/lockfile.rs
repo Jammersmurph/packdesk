@@ -163,6 +163,9 @@ fn cache_get(dir: &Path) -> Option<Lockfile> {
 }
 
 pub fn read(dir: &Path) -> Result<Lockfile> {
+    if crate::native::is_native(dir) {
+        return crate::native::lockfile(dir);
+    }
     let manifest = crate::manifest::read(dir)?;
     let items = crate::content::read_all(dir);
     let cached: HashMap<String, LockedMod> = cache_get(dir)

@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+REVISION="$(cat "$ROOT/packwiz-revision")"
+TARGET="${PACKDESK_TARGET:-$(rustc -vV | sed -n 's/^host: //p')}"
+mkdir -p "$ROOT/src-tauri/binaries"
+SOURCE="${PACKWIZ_SOURCE:-$ROOT/build/packwiz-source}"
+if [ -z "${PACKWIZ_SOURCE:-}" ]; then
+    if [ ! -d "$SOURCE/.git" ]; then
+        mkdir -p "$SOURCE"
+        git -C "$SOURCE" init -q
+        git -C "$SOURCE" remote add origin https://github.com/packwiz/packwiz.git
+    fi
+    git -C "$SOURCE" fetch --depth 1 origin "$REVISION"
+    # Only this script's isolated build checkout is changed.
+    git -C "$SOURCE" switch --detach "$REVISION"
+fi
+case "$TARGET" in
+    x86_64-unknown-linux-gnu) GOOS=linux; GOARCH=amd64; EXT= ;;
+    aarch64-unknown-linux-gnu) GOOS=linux; GOARCH=arm64; EXT= ;;
+    x86_64-apple-darwin) GOOS=darwin; GOARCH=amd64; EXT= ;;
+    aarch64-apple-darwin) GOOS=darwin; GOARCH=arm64; EXT= ;;
+    x86_64-pc-windows-msvc) GOOS=windows; GOARCH=amd64; EXT=.exe ;;
+    *) echo "Unsupported target: $TARGET" >&2; exit 1 ;;
+esac
+export GOOS GOARCH
+cd "$SOURCE"
+CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
+    -o "$ROOT/src-tauri/binaries/packwiz-$TARGET$EXT" .
