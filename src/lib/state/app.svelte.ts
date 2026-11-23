@@ -124,7 +124,7 @@ class AppState {
 		} catch (error) {
 			this.update = null
 			if (loud) toasts.error(error)
-			else tasks.fail('Checking for a packweave update', error)
+			else tasks.fail('Checking for a Packdesk update', error)
 		}
 		return this.update
 	}

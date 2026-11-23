@@ -56,10 +56,10 @@ interface Built {
 }
 
 const LINKS: [string, string][] = [
-	['packweave Website', 'https://packweave.com'],
-	['Discord', 'https://discord.gg/VZBgts9jCj'],
-	['Report an Issue', 'https://github.com/packweavers/packweave/issues'],
-	["What's New", 'https://github.com/packweavers/packweave/releases'],
+	['Packdesk Source', 'https://github.com/Jammersmurph/packdesk'],
+	['Upstream Packweave', 'https://github.com/packweavers/packweave'],
+	['Report an Issue', 'https://github.com/Jammersmurph/packdesk/issues'],
+	["What's New", 'https://github.com/Jammersmurph/packdesk/releases'],
 ]
 
 let generation = 0
@@ -180,9 +180,9 @@ async function packMenu(): Promise<Entry[]> {
 	const version = await getVersion()
 	return [
 		{
-			label: 'packweave',
+			label: 'Packdesk',
 			items: [
-				{ about: { name: 'packweave', version } },
+				{ about: { name: 'Packdesk', version } },
 				'separator',
 				{ label: 'Check for Updates…', run: () => openSettingsWindow('updates') },
 				'separator',
@@ -336,9 +336,9 @@ async function settingsMenu(): Promise<Entry[]> {
 	const version = await getVersion()
 	return [
 		{
-			label: 'packweave',
+			label: 'Packdesk',
 			items: [
-				{ about: { name: 'packweave', version } },
+				{ about: { name: 'Packdesk', version } },
 				'separator',
 				{ predefined: 'Services' },
 				'separator',

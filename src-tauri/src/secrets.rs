@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-const SERVICE: &str = "packweave";
+const SERVICE: &str = "packdesk";
 
 static FALLBACK_DIR: OnceLock<PathBuf> = OnceLock::new();
 

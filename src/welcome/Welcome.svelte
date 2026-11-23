@@ -1,5 +1,5 @@
 <script lang="ts">
-	import icon from '@/assets/icon.png'
+	import icon from '@/assets/packdesk.svg'
 	import {
 		clonePack,
 		importPack,
@@ -55,7 +55,7 @@
 <div class="welcome">
 	{#if app.update}
 		<div class="banner info">
-			packweave {app.update.version} is ready. It installs when you restart.
+			Packdesk {app.update.version} is ready. It installs when you restart.
 			<span class="spacer"></span>
 			<button class="btn primary" onclick={pending(() => app.installUpdate())}
 				>Restart to update</button
@@ -74,10 +74,10 @@
 			<header class="brand">
 				<img src={icon} alt="" width="56" height="56" />
 				<div>
-					<h1 class="title-display">packweave</h1>
+					<h1 class="title-display">Packdesk</h1>
 					<p>
-						A Minecraft modpack IDE with Git-native packs, Modrinth and CurseForge, two-way Instance
-						Sync, and one-click publishing
+						A friendly workspace for packwiz and Git. Browse mods, review your changes,
+						and build your next Minecraft modpack.
 					</p>
 				</div>
 			</header>

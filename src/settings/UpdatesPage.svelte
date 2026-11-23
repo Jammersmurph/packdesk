@@ -30,7 +30,7 @@
 
 <div class="band bar">Updates</div>
 <div class="setting">
-	<span class="key">packweave {app.info?.version ?? ''}</span>
+	<span class="key">Packdesk {app.info?.version ?? ''}</span>
 	{#if app.update}
 		<span class="tag info">{app.update.version} available</span>
 		<span class="spacer"></span>

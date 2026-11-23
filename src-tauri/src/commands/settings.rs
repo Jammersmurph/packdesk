@@ -37,7 +37,7 @@ pub struct AppInfo {
 #[tauri::command]
 pub async fn app_info(app: tauri::AppHandle) -> Result<AppInfo, String> {
     use tauri::Manager;
-    let dir = app.path().data_dir().map_err(es)?.join("packweave");
+    let dir = app.path().data_dir().map_err(es)?.join("packdesk");
     Ok(AppInfo {
         version: env!("CARGO_PKG_VERSION").into(),
         data_dir: dir.to_string_lossy().to_string(),
@@ -53,7 +53,7 @@ pub async fn read_prefs(app: tauri::AppHandle) -> Result<String, String> {
         .path()
         .data_dir()
         .map_err(es)?
-        .join("packweave")
+        .join("packdesk")
         .join("prefs.json");
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
@@ -69,7 +69,7 @@ pub async fn read_prefs(app: tauri::AppHandle) -> Result<String, String> {
         }
         _ => {
             std::fs::rename(&path, path.with_file_name("prefs.broken.json")).map_err(es)?;
-            Err("Couldn't read your settings, so packweave started with the defaults. The old file is saved as prefs.broken.json.".into())
+            Err("Couldn't read your settings, so Packdesk started with the defaults. The old file is saved as prefs.broken.json.".into())
         }
     }
 }
@@ -77,7 +77,7 @@ pub async fn read_prefs(app: tauri::AppHandle) -> Result<String, String> {
 #[tauri::command]
 pub async fn write_prefs(app: tauri::AppHandle, content: String) -> Result<(), String> {
     use tauri::Manager;
-    let dir = app.path().data_dir().map_err(es)?.join("packweave");
+    let dir = app.path().data_dir().map_err(es)?.join("packdesk");
     std::fs::create_dir_all(&dir).map_err(es)?;
     std::fs::write(dir.join("prefs.json"), content).map_err(es)
 }
@@ -91,18 +91,9 @@ pub struct UpdateInfo {
 }
 
 fn updater_supported() -> bool {
-    #[cfg(target_os = "linux")]
-    {
-        std::env::var_os("APPIMAGE").is_some()
-            || (tauri::utils::platform::bundle_type()
-                == Some(tauri::utils::config::BundleType::Deb)
-                && std::path::Path::new("/var/lib/dpkg/info/packweave.list").exists())
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    {
-        true
-    }
+    // Never offer the upstream application's signed updates to fork users.
+    // Downloads are published on Packdesk's GitHub Releases instead.
+    false
 }
 
 #[tauri::command]
@@ -126,7 +117,7 @@ pub async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
     use tauri_plugin_updater::UpdaterExt;
     if !updater_supported() {
         return Err("Automatic updates aren't available for this install. \
-             Update packweave through your package manager."
+             Download Packdesk updates from github.com/Jammersmurph/packdesk/releases."
             .into());
     }
     let updater = app.updater().map_err(es)?;
@@ -189,7 +180,7 @@ fn cache_folders(app: &tauri::AppHandle) -> Vec<std::path::PathBuf> {
     use tauri::Manager;
     let mut out = vec![std::env::temp_dir().join("packweave-release")];
     if let Ok(base) = app.path().data_dir() {
-        let root = base.join("packweave");
+        let root = base.join("packdesk");
         out.push(root.join("cache"));
         out.push(root.join("lockcache"));
     }

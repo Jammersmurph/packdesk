@@ -21,7 +21,7 @@ import { docId, isDocKind, tabs } from './tabs.svelte'
 import { tasks } from './tasks.svelte'
 import { toasts } from './toasts.svelte'
 
-const APP_TITLE = 'packweave'
+const APP_TITLE = 'Packdesk'
 const PACK_EVENT = 'pack-changed'
 
 export interface OpenOptions {

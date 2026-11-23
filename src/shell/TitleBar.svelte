@@ -50,7 +50,7 @@
 			<Icon icon={ChevronDown} size={12} />
 		</button>
 	{:else}
-		<span class="app-name" data-tauri-drag-region>packweave</span>
+		<span class="app-name" data-tauri-drag-region>Packdesk</span>
 	{/if}
 
 	{#if palette.open}

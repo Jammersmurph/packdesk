@@ -55,9 +55,9 @@ use modrinth::Modrinth;
 use tauri::Manager;
 
 pub const USER_AGENT: &str = concat!(
-    "packweave/",
+    "packdesk/",
     env!("CARGO_PKG_VERSION"),
-    " (modpack builder; +https://github.com/packweavers/packweave)"
+    " (packwiz workspace; +https://github.com/Jammersmurph/packdesk)"
 );
 
 #[cfg(target_os = "linux")]
@@ -72,7 +72,7 @@ fn dbus_session_available() -> bool {
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     if let Ok(base) = app.path().data_dir() {
-        let root = base.join("packweave");
+        let root = base.join("packdesk");
         let cache = root.join("cache");
         let _ = std::fs::create_dir_all(&cache);
         app.state::<CurseForge>().set_cache_dir(cache.clone());

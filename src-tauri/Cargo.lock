@@ -2676,8 +2676,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "packweave"
-version = "2.1.0"
+name = "packdesk"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",

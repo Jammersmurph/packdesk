@@ -1,5 +1,5 @@
 <script lang="ts">
-	import icon from '@/assets/icon.png'
+	import icon from '@/assets/packdesk.svg'
 	import { app } from '@/lib/state/app.svelte'
 	import { openExternal, openFolder } from '@/lib/tauri/windows'
 	import { shortenHome } from '@/lib/util/path'
@@ -7,18 +7,20 @@
 
 <div class="about">
 	<img src={icon} alt="" width="72" height="72" />
-	<h1 class="title-doc">packweave</h1>
+	<h1 class="title-doc">Packdesk</h1>
 	<span class="mono">{app.info?.version ?? ''}</span>
 	<p>
-		A Minecraft modpack IDE with Git-native packs, Modrinth and CurseForge, two-way instance sync,
-		and one-click publishing
+		A Git-native desktop workspace for packwiz. Modified from Packweave on November 23, 2026.
+		Released under GPLv3, without warranty. You may share and modify it under that license.
 	</p>
 	<div class="links">
 		<button
 			class="btn"
-			onclick={() => void openExternal('https://github.com/packweavers/packweave')}
+			onclick={() => void openExternal('https://github.com/Jammersmurph/packdesk')}
 			>Source code</button
 		>
+		<button class="btn" onclick={() => void openExternal('https://github.com/Jammersmurph/packdesk/blob/main/LICENSE')}>License</button>
+		<button class="btn" onclick={() => void openExternal('https://github.com/packweavers/packweave')}>Upstream Packweave</button>
 		<button class="btn" onclick={() => app.info && void openFolder(app.info.dataDir)}
 			>Data folder</button
 		>

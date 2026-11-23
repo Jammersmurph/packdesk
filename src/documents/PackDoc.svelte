@@ -308,7 +308,7 @@
 
 	async function removePack(): Promise<void> {
 		const ok = await dialogs.open(ConfirmDialog, {
-			title: `Remove ${ws.name} from packweave?`,
+			title: `Remove ${ws.name} from Packdesk?`,
 			message: "The folder isn't deleted.",
 			confirm: 'Remove pack',
 			danger: true,

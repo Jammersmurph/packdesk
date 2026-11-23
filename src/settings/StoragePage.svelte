@@ -27,7 +27,7 @@
 		const ok = await dialogs.open(ConfirmDialog, {
 			title: 'Clear the cache?',
 			message:
-				'packweave fetches it again as required. Your packs, settings, sign-ins and sync history stay.',
+				'Packdesk fetches it again as required. Your packs, settings, sign-ins and sync history stay.',
 			confirm: 'Clear cache',
 		})
 		if (!ok) return

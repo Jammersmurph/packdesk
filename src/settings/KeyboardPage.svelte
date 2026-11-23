@@ -115,7 +115,7 @@
 	<span class="key">Preset</span>
 	<Segmented
 		options={[
-			{ value: 'packweave' as KeymapPreset, label: 'packweave' },
+			{ value: 'packweave' as KeymapPreset, label: 'Packdesk' },
 			{ value: 'vscode' as KeymapPreset, label: 'VS Code' },
 			{ value: 'jetbrains' as KeymapPreset, label: 'JetBrains' },
 		]}
